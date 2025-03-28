@@ -161,7 +161,7 @@ st.plotly_chart(fig_list_orgaos)
 st.markdown("---")
 
 #filtro de seleção da secretaria (plot do anual por secretaria - Secretaria como filtro)
-col1, col2 = st.columns([1, 3])  
+col1, col2, col3 = st.columns([1, 2, 3])  
 
 with col1:
     st.markdown("### SECRETARIAS")
@@ -170,13 +170,27 @@ with col1:
         options = df['Orgao2'].unique(),
         index=4       
         )
+    
+    objeto = st.selectbox(
+        "Selecione o Objeto:", 
+        options = df['Objeto'].unique(),
+        index=15
+    )
 
 df_entity = df.query("Orgao2 == @entity") #para poder aplicar o filtro tenho que definir aqui a variavel e seu filtro
+df_entity_objeto = df.query("Orgao2 == @entity and Objeto == @objeto") #para poder aplicar o filtro tenho que definir aqui a variavel e seu filtro
+
 
 valor_total = df_entity['Valor'].sum()
 valor_total = locale.currency(valor_total, grouping=True)
 st.write(f"Valor total licitado filtrado por Secretaria: **{valor_total}**")
 
+
+valor_total = df_entity_objeto['Valor'].sum()
+valor_total = locale.currency(valor_total, grouping=True)
+st.write(f"Valor total licitado filtrado por objeto: **{valor_total}**")
+
+#valor por ano da secretatia selecionada
 list_year = (
     df_entity.groupby(by=["year"])
     .sum()[['Valor']]
@@ -195,9 +209,34 @@ fig_list_year = px.bar(
     template='plotly_white'
     )
 
+#valor por ano/objeto da secretaria
+list_year_objeto = (
+    df_entity_objeto.groupby(by=["year"])
+    .sum()[['Valor']]
+    .sort_values(by="year", ascending=True)
+)
+
+titulo_grafico = f"<b>Valor por Objeto: {objeto}</b>"
+fig_year_objeto = px.bar(
+    list_year_objeto, 
+    y='Valor', 
+    x=list_year_objeto.index,
+    orientation='v',
+    title= titulo_grafico,
+    color_discrete_sequence=['#346beb']*len(list_year_objeto),
+    labels={'Valor':'Valor (R$)', 'Orgao2':'Órgão'},
+    template='plotly_white'
+    )
+
 with col2:
     st.plotly_chart(fig_list_year)
+
+with col3:
+    st.plotly_chart(fig_year_objeto)
     
+
+
+
 
 # ----------------------------------------------------------------------
 #f Filtro por ano: secretarias com mais gastos por ano

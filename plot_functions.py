@@ -107,7 +107,7 @@ def donut(df, categoria):
 def line_chart(df, selected_year):
     if selected_year != 'Todos os Anos':
         df_plot = df[df['Ano'] == selected_year].groupby('month').agg({'Value': 'mean'}).reset_index()
-        month_order = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dec']
+        month_order = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
         df_plot['month'] = pd.Categorical(df_plot['month'], categories=month_order, ordered=True)
         df_plot = df_plot.sort_values('month')
         x_axis = 'month'

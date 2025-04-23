@@ -1,5 +1,7 @@
 **Repositório para mostras de dashboards:**
 
+![Dashboard Licitações](streamlitimage.jpg)
+
 Dashboard de dispensas de licitação no Estado da Paraíba entre os anos de 2019 e 2024
 
     - dashboard_licPB.py: construido usando streamlit
@@ -18,4 +20,3 @@ Para rodar o dashboard em streamlit:
 
 No dashboard de dispensas de licitação no Estado da Paraíba você pode selecionar o ano, secretaria de realização da dispensa, objeto do contrato e empresa vencedora, de forma interativa.
 
-![Dashboard Licitações](streamlitimage.jpg)

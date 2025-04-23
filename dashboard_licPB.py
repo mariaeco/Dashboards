@@ -2,22 +2,18 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import altair as alt
-import matplotlib.pyplot as plt
 import plotly.express as px
-import locale
-
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
-
-## STREAMLIT EMOJIS: https://streamlit-emoji-shortcodes-streamlit-app-gwckff.streamlit.app/
+import plotly.graph_objects as go
+import plotly.io as pio
+from babel.numbers import format_currency
 
 
+pio.templates.default = None
 
 st.set_page_config(page_title="Dispensas de Licitação", 
                    layout="wide", 
                    page_icon=":chart_with_downwards_trend:",
                    initial_sidebar_state="expanded")
-alt.themes.enable("dark")
 
 #configurações de estilo
 st.markdown("""
@@ -40,7 +36,16 @@ st.markdown("""
         }
         section[data-testid="stSidebar"] {
             background: rgba(30, 47, 91, 0.5);
+            color: white !important;
         }
+            
+        section[data-testid="stSidebar"] h1 {
+            color: white !important; /* Força o título do sidebar a ser branco */
+        }
+        section[data-testid="stSidebar"] p {
+            color: white !important;
+        }
+            
         header[data-testid="stHeader"] {
             background: transparent !important;
             backdrop-filter: blur(0px);
@@ -56,13 +61,24 @@ st.markdown("""
         .info-box {
             font-size: 1.5rem;
             text-align: center;
-            color: white;
+            color: white !important;
             background-color: #00162c;
             border-radius: 5px;
             margin-bottom: -40 !important;
             padding: 15px;
         }
             
+        .stMetricValue {
+            color: white !important; /* Força o texto das métricas a ser branco */
+        }
+            
+        div[data-testid="stMetricValue"] {
+            color: white !important;
+        }
+            
+        div[data-testid="stNotificationContentInfo"] {
+            color: white !important;
+        }
         /* ------------- TITULO DOS GRAFICOS -----------------*/
 
         div.titulo-container {
@@ -89,6 +105,7 @@ st.markdown("""
             border-bottom-left-radius: 10px;
             border-bottom-right-radius: 10px;
             overflow: hidden;
+            color: white !important;
         }
         
 
@@ -117,7 +134,7 @@ st.markdown("""
         div.titulo-tabela h4 {
             margin: 0;
             padding: 15px;
-            color: white;
+            color: white !important;
             font-size: 16px;
         }
         table {
@@ -127,7 +144,7 @@ st.markdown("""
             
         thead th {
             background-color: #00162c;
-            color: white; /* Cor do texto do cabeçalho */
+            color: white !important; /* Cor do texto do cabeçalho */
         }
         tbody tr:nth-child(odd) {
             background-color: #f9f9f9;
@@ -135,10 +152,11 @@ st.markdown("""
         tbody tr:nth-child(even) {
             background-color: #e0e0e0;
         }
-        tbody td, thead th {
-            color: #333333; /* Cor do texto das células */
+        tbody td {
+            color: #333333; /* Cor do texto das células */}
         }
             
+  
 
 
     </style>
@@ -252,10 +270,6 @@ valor_total = df_filtered_metrics['Value'].sum()
 n_total = len(df_filtered_metrics)  # Conta o número total de registros
 lic_max = df_filtered_metrics['Value'].max() if not df_filtered_metrics.empty else 0
 
-# Formata os valores
-# valor_total = locale.currency(valor_total, grouping=True)
-# lic_max = locale.currency(lic_max, grouping=True)
-
 
 # Cálculo do delta (comparação com ano anterior)
 delta = None
@@ -264,12 +278,13 @@ if selected_year != 'Todos os Anos' and selected_year != '2019':
     ano_anterior = str(int(selected_year) - 1)
     valor_anterior = df[(df['Ano'] == ano_anterior) & (df['Secretaria'] == selected_orgao)]['Value'].sum()
     delta = valor_total - valor_anterior
-    delta_text = locale.currency(abs(delta), grouping=True)
+    delta_text = format_currency(abs(delta), 'BRL', locale='pt_BR')
     delta_text = f"-{delta_text}" if delta < 0 else f"+{delta_text}"
 
-valor_total = locale.currency(valor_total, grouping=True)
-lic_max = locale.currency(lic_max, grouping=True)
-# Métricas com delta condicional
+
+valor_total = format_currency(valor_total, 'BRL', locale='pt_BR')
+lic_max = format_currency(lic_max, 'BRL', locale='pt_BR')
+
 
 with col1:
     st.markdown("<div class='info-box'>Valor Total de Dispensas</div>", unsafe_allow_html=True)
@@ -308,8 +323,9 @@ linha1g1, linha1g2 = st.columns((1, 1), gap='medium')
 linha2g1, linha2g2, linha2g3= st.columns((1, 1.5, 1.5), gap='medium')
 
 # ---------- FUNÇÕES DOS GRÁFICOS E TABELAS -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 def plot_barh(df):
-        
     list_orgaos = (
         df.groupby('Secretaria')
         .agg({"Value": "sum"})
@@ -317,137 +333,118 @@ def plot_barh(df):
         .sort_values(by="Value", ascending=False)
     )
 
-    top_orgaos = list_orgaos.head(8)
-    
-    top_orgaos = top_orgaos.sort_values(by="Value", ascending=True)
-    top_orgaos['valor_formatado'] = top_orgaos['Value'].apply(lambda x: locale.currency(x, grouping=True))
-    
-    fig = px.bar(top_orgaos, 
-                 x='Value', 
-                 y='Secretaria', 
-                 orientation='h', 
-                 color=top_orgaos["Value"].apply(lambda x: np.log1p(x)), 
-                 color_continuous_scale='Blues',
-                 text='valor_formatado'  # Adiciona os valores formatados como texto
+    top_orgaos = list_orgaos.head(8).sort_values(by="Value", ascending=True)
+    top_orgaos['valor_formatado'] = top_orgaos['Value'].apply(lambda x: format_currency(x, 'BRL', locale='pt_BR'))
+
+    fig = px.bar(
+        top_orgaos,
+        x='Value',
+        y='Secretaria',
+        orientation='h',
+        color=top_orgaos["Value"].apply(lambda x: np.log1p(x)),
+        color_continuous_scale='Blues',
+        text='valor_formatado'
     )
-    
+
     fig.update_traces(
-        textposition='outside',  # Coloca o texto fora das barras
-        textfont=dict(color="white", size=12),  # Cor do texto
-        hovertemplate=None,  # Remove o hover template padrão
-        hoverinfo='skip'  # Remove as informações ao passar o mouse
+        textposition='outside',
+        textfont=dict(color="white", size=12),
+        hovertemplate=None,
+        hoverinfo='skip'
     )
-    fig.update_coloraxes(showscale=False)
+
     fig.update_layout(
-        xaxis_title=None, 
+        xaxis_title=None,
         yaxis_title=None,
         font=dict(color="white"),
         showlegend=False,
         height=238,
         width=100,
         margin=dict(l=10, r=10, t=15, b=10),
+        plot_bgcolor='#34495e',
+        paper_bgcolor='#34495e',
+        coloraxis_showscale=False,
         xaxis=dict(
             range=[0, top_orgaos['Value'].max() * 1.2],
-            gridcolor='rgba(255, 255, 255, 0.1)'  # Grade mais suave
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
         ),
         yaxis=dict(
-            gridcolor='rgba(255, 255, 255, 0.1)'  # Grade mais suave
-        ),
-        plot_bgcolor='#34495e',     # Fundo do plot mais escuro
-        paper_bgcolor='#34495e'   # Fundo do papel mais escuro
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
+        )
     )
+
     return fig
 
-
 def create_stats_table(df):
-    # Agrupa por ano e calcula as estatísticas
     stats_df = df.groupby('Ano').agg({
         'Value': ['max', 'mean', 'min']
     }).reset_index()
-    
-    # Achata os nomes das colunas
     stats_df.columns = ['Ano', 'Máximo', 'Média', 'Mínimo']
-    
-    # Formata os valores monetários
     for col in ['Máximo', 'Média', 'Mínimo']:
-        stats_df[col] = stats_df[col].apply(lambda x: locale.currency(x, grouping=True))
-    
+        stats_df[col] = stats_df[col].apply(lambda x: format_currency(x, 'BRL', locale='pt_BR'))
     return stats_df
 
-
-
 def donut(df, categoria):
-    # Cria a coluna de categorias
     df['Categoria'] = pd.cut(df['Value'], bins=[0, 50000, 100000, 150000, float('inf')], 
                              labels=['<50 mil', '50-100 mil', '100-150 mil','>150 mil'])
-    
-    # Conta o número de ocorrências em cada categoria
     counts = df['Categoria'].value_counts().reset_index()
     counts.columns = ['Categoria', 'Contagem']
-    
-    # Cria o gráfico de donut
+
     fig = px.pie(counts, 
                  values='Contagem', 
                  names='Categoria', 
                  hole=0.7, 
-                 color_discrete_sequence=['#001f3f', '#0074D9', '#7FDBFF', '#39CCCC'], #'#001f3f'
+                 color_discrete_sequence=['#001f3f', '#0074D9', '#7FDBFF', '#39CCCC'],
                  title='',
-                 labels={'Contagem': 'Quantidade'}
-                )
-    
+                 labels={'Contagem': 'Quantidade'})
+
     fig.update_traces(textinfo='percent+label')
     fig.update_layout(
         showlegend=False,
         margin=dict(l=0, r=20, t=30, b=5),
         height=200,
-        paper_bgcolor='rgba(0,0,0,0)',  # Fundo do papel transparente
-        plot_bgcolor='rgba(0,0,0,0)'   # Fundo do gráfico transparente
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color="white"),
+        xaxis=dict(
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
+        ),
+        yaxis=dict(
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
+        )
     )
-    
     return fig
 
-
 def line_chart(df, selected_year):
-    """
-    Cria um gráfico de linha com base no DataFrame fornecido.
-    Se um ano específico for selecionado, calcula a média mensal.
-    Caso contrário, exibe a soma anual.
-    """
     if selected_year != 'Todos os Anos':
-        # Filtra os dados para o ano selecionado e calcula a média por mês
         df_plot = df[df['Ano'] == selected_year].groupby('month').agg({'Value': 'mean'}).reset_index()
-        # Ordena os meses em ordem cronológica
         month_order = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dec']
         df_plot['month'] = pd.Categorical(df_plot['month'], categories=month_order, ordered=True)
-        df_plot = df_plot.sort_values('month')  # Ordena o DataFrame pelos meses
-        
+        df_plot = df_plot.sort_values('month')
         x_axis = 'month'
         title_text = f"{selected_year}"
     else:
-        # Agrupa os dados por ano e calcula a soma dos valores
         df_plot = df.groupby('Ano').agg({'Value': 'sum'}).reset_index()
         x_axis = 'Ano'
         title_text = "Soma Anual"
 
-    # Cria o gráfico de linha
-    fig = px.area(
-        df_plot,
-        x=x_axis,
-        y='Value',
-        markers=True  # Adiciona marcadores nos pontos
-    )
-
-    # Ajusta o layout do gráfico
+    fig = px.area(df_plot, x=x_axis, y='Value', markers=True)
     fig.update_traces(
-        line=dict(color='#1f77b4', width=4),  # Cor e largura da linha
-        marker=dict(size=8, color='#ff7f0e')  # Configuração dos marcadores
+        line=dict(color='#1f77b4', width=4),
+        marker=dict(size=8, color='#ff7f0e')
     )
     fig.update_layout(
         title=dict(
-            text=title_text,  # Define o título dentro do gráfico
-            x=0.7,  # Centraliza o título horizontalmente
-            y=0.9,  # Define a posição vertical do título
-            font=dict(size=14, color="white")  # Estilo do título
+            text=title_text,
+            x=0.7,
+            y=0.9,
+            font=dict(size=14, color="white")
         ),
         xaxis_title=None,
         yaxis_title=None,
@@ -456,39 +453,45 @@ def line_chart(df, selected_year):
         height=200,
         width=100,
         margin=dict(l=10, r=10, t=15, b=10),
-        plot_bgcolor='rgba(0,0,0,0)',  # Fundo do plot mais escuro
-        paper_bgcolor='rgba(0,0,0,0)',  # Fundo do papel mais escuro
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(
-            gridcolor='rgba(255, 255, 255, 0.1)',  # Grade mais suave
-            tickmode='linear',  
-            tickangle=-90
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickmode='linear',
+            tickangle=-90,
+            color='white',
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
         ),
         yaxis=dict(
-            gridcolor='rgba(255, 255, 255, 0.1)'  # Grade mais suave
+            color="white",
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
         )
     )
-
     return fig
 
 def barh_invertido(df, categoria):
     df_grouped = df.groupby([categoria]).agg({'Value': 'sum'}).reset_index()
-    df_grouped = df_grouped.sort_values(by='Value', ascending=True).tail(5)  # Exibe os 5 principais
+    df_grouped = df_grouped.sort_values(by='Value', ascending=True).tail(5)
     df_grouped['Value'] = -df_grouped['Value']
-    df_grouped['Valor Formatado'] = df_grouped['Value'].apply(lambda x: locale.currency(abs(x), grouping=True))
+    df_grouped['Valor Formatado'] = df_grouped['Value'].apply(lambda x: format_currency(abs(x), 'BRL', locale='pt_BR'))
+
     fig = px.bar(
         df_grouped,
         x='Value',
         y=categoria,
         orientation='h',
         text='Valor Formatado',
-        color=categoria,  # Aplica cores diferentes para cada categoria
-        color_discrete_sequence=['#DDDDDD', '#39CCCC', '#7FDBFF', '#0074D9', '#001f3f']  # Paleta personalizada
+        color=categoria,
+        color_discrete_sequence=['#DDDDDD', '#39CCCC', '#7FDBFF', '#0074D9', '#001f3f']
     )
-    
+
     fig.update_traces(
-        textposition='auto',  
-        textfont=dict(color="white", size=12), 
-        insidetextanchor='middle'  # Centraliza o texto dentro da barra
+        textposition='auto',
+        textfont=dict(color="white", size=12),
+        insidetextanchor='middle'
     )
     fig.update_layout(
         xaxis_title=None,
@@ -496,23 +499,25 @@ def barh_invertido(df, categoria):
         font=dict(color="white"),
         height=240,
         width=600,
-        plot_bgcolor='rgba(0,0,0,0)', 
+        plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=10, r=10, t=30, b=10),
         showlegend=False,
         xaxis=dict(
-            tickformat=".2s",  
-            gridcolor='rgba(255, 255, 255, 0.1)', 
-            tickvals=[-df_grouped['Value'].min(), 0],  
-            ticktext=[locale.currency(abs(df_grouped['Value'].min()), grouping=True), "0"]
+            tickformat=".2s",
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)',
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickvals=[-df_grouped['Value'].min(), 0],
+            ticktext=[format_currency(abs(df_grouped['Value'].min()), 'BRL', locale='pt_BR'), "0"]
         ),
         yaxis=dict(
-            gridcolor='rgba(255, 255, 255, 0.1)' 
+            gridcolor='rgba(255, 255, 255, 0.1)',
+            tickfont=dict(color='white'),
+            zerolinecolor='rgba(255, 255, 255, 0.3)'
         )
     )
-    
     return fig
-
 
 # =================================================================================================================================================================
 # ============ GRAFICOS =================================================================================================================================

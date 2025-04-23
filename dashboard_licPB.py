@@ -1,4 +1,4 @@
-#streamlit run testes.py 
+#streamlit run dashboard_licPB.py 
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,7 +13,7 @@ locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 
 
-st.set_page_config(page_title="Dispensas de Licitação TESTE", 
+st.set_page_config(page_title="Dispensas de Licitação", 
                    layout="wide", 
                    page_icon=":chart_with_downwards_trend:",
                    initial_sidebar_state="expanded")
@@ -176,7 +176,7 @@ selected_obj = 'Todos os Objetos'
 selected_empresa = 'Todas as Empresas'
 
 with st.sidebar:
-    st.title(':pencil: Dashboard de Dispensas de Licitação - PB')
+    st.title(':pencil: Dispensas de Licitação - PB (2019-2024)')
     
     # Seletor de ano
     year_list = list(df.Ano.unique())[::-1]

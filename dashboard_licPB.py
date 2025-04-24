@@ -189,6 +189,8 @@ def load_data():
 df = load_data()
 # ================ SIDEBAR E FILTROS =====================================================================
 
+# df.loc[df['Value'] > 20000000, 'Value'] = np.nan
+
 selected_orgao = 'Todos as Secretarias'
 selected_obj = 'Todos os Objetos'
 selected_empresa = 'Todas as Empresas'

@@ -1,5 +1,5 @@
 **Repositório para mostras de dashboards:**
-
+    
 ![Dashboard Licitações](streamlitimage.jpg)
 
 Dashboard de dispensas de licitação no Estado da Paraíba entre os anos de 2019 e 2024
